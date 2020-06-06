@@ -1,0 +1,34 @@
+{
+	"name": "CEA_ABTesting",
+	"properties": {
+		"activities": [
+			{
+				"name": "Start Email",
+				"type": "WebActivity",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"url": "https://prod-51.westus.logic.azure.com:443/workflows/d789c0b3df294d5fbd060febd87366d9/triggers/manual/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=P3iAuOWKqOxT8bYuAxK2ekFPmwKOMhB9ALFViGDvaek",
+					"method": "POST",
+					"headers": {
+						"Content-Type": "application/json"
+					},
+					"body": {
+						"DataFactoryName": "@{pipeline().DataFactory}",
+						"PipelineName": "@{pipeline().Pipeline}",
+						"Subject": "CEA AB Test Started",
+						"EmailTo": "htrivedi@xactlycorp.com"
+					}
+				}
+			}
+		],
+		"annotations": []
+	}
+}
