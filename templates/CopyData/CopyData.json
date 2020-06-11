@@ -1,0 +1,418 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name"
+		},
+		"CEADEV": {
+			"type": "string"
+		},
+		"XACTLYCAP": {
+			"type": "string"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/CopyData')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Copy Data from CEADEV to Xactly CAP",
+				"activities": [
+					{
+						"name": "Copy Transaction Table",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": "/****** Script for SelectTopNRows command from SSMS  ******/\nSELECT \n      [OrderNumber]\n      ,[OrderItem]\n      ,[OrderDate]\n      ,[Commission]\n      ,[TypeOfSaleDesc]\n      ,[PlanName]\n      ,[MetricName]\n      ,[PayeeName]\n      ,[CustomerName]\n      ,[ContractTerm]\n      ,[POBName]\n      ,[CurrencyCode]\n      ,[Counter]\n      ,[Counter1]\n  FROM [dbo].[Trans_Commissions_AGgrid]",
+								"queryTimeout": "02:00:00"
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"preCopyScript": "\ndelete from [Staging_Commissions]",
+								"disableMetricsCollection": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "OrderNumber",
+											"type": "String"
+										},
+										"sink": {
+											"name": "OrderNumber",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "OrderItem",
+											"type": "String"
+										},
+										"sink": {
+											"name": "OrderItem",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "OrderDate",
+											"type": "DateTime"
+										},
+										"sink": {
+											"name": "OrderDate",
+											"type": "DateTime"
+										}
+									},
+									{
+										"source": {
+											"name": "Commission",
+											"type": "Int32"
+										},
+										"sink": {
+											"name": "Commission",
+											"type": "Int32"
+										}
+									},
+									{
+										"source": {
+											"name": "TypeOfSaleDesc",
+											"type": "String"
+										},
+										"sink": {
+											"name": "TypeOfSaleDesc",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "PlanName",
+											"type": "String"
+										},
+										"sink": {
+											"name": "PlanName",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "MetricName",
+											"type": "String"
+										},
+										"sink": {
+											"name": "MetricName",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "PayeeName",
+											"type": "String"
+										},
+										"sink": {
+											"name": "PayeeName",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "CustomerName",
+											"type": "String"
+										},
+										"sink": {
+											"name": "CustomerName",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "ContractTerm",
+											"type": "Int32"
+										},
+										"sink": {
+											"name": "ContractTerm",
+											"type": "Int32"
+										}
+									},
+									{
+										"source": {
+											"name": "POBName",
+											"type": "String"
+										},
+										"sink": {
+											"name": "POBName",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "CurrencyCode",
+											"type": "String"
+										},
+										"sink": {
+											"name": "CurrencyCode",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "Counter",
+											"type": "String"
+										},
+										"sink": {
+											"name": "Counter",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "Counter1",
+											"type": "String"
+										},
+										"sink": {
+											"name": "Counter1",
+											"type": "String"
+										}
+									}
+								]
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "Dev_TransactionTable",
+								"type": "DatasetReference"
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "XactlyCAP_StagingCommission",
+								"type": "DatasetReference"
+							}
+						]
+					},
+					{
+						"name": "Email",
+						"type": "WebActivity",
+						"dependsOn": [
+							{
+								"activity": "Copy Transaction Table",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"url": "https://prod-112.westus.logic.azure.com:443/workflows/549d3d8d7c0d419794a9d04d3833bac7/triggers/manual/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=JG9u9suuB72TlEr31IIiYU7TPvT8kk5byQnVR5uksLQ",
+							"method": "POST",
+							"headers": {
+								"Content-Type": "application/json"
+							},
+							"body": {
+								"DataFactoryName": "@{pipeline().DataFactory}",
+								"PipelineName": "@{pipeline().Pipeline}",
+								"Subject": "Data Copy finished!",
+								"EmailTo": "htrivedi@xactlycorp.com"
+							}
+						}
+					}
+				],
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/Dev_TransactionTable')]",
+				"[concat(variables('factoryId'), '/datasets/XactlyCAP_StagingCommission')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Dev_TransactionTable')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "[parameters('CEADEV')]",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "Id",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "OrderNumber",
+						"type": "nvarchar"
+					},
+					{
+						"name": "OrderItem",
+						"type": "nvarchar"
+					},
+					{
+						"name": "OrderDate",
+						"type": "date"
+					},
+					{
+						"name": "Commission",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "TypeOfSaleDesc",
+						"type": "nvarchar"
+					},
+					{
+						"name": "PlanName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "MetricName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "PayeeName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CustomerName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ContractTerm",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "POBName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CurrencyCode",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Counter",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Counter1",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "Trans_Commissions_AGgrid"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/XactlyCAP_StagingCommission')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "[parameters('XACTLYCAP')]",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "Id",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "OrderNumber",
+						"type": "nvarchar"
+					},
+					{
+						"name": "OrderItem",
+						"type": "nvarchar"
+					},
+					{
+						"name": "OrderDate",
+						"type": "date"
+					},
+					{
+						"name": "Commission",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "TypeOfSaleDesc",
+						"type": "nvarchar"
+					},
+					{
+						"name": "PlanName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "MetricName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "PayeeName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CustomerName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ContractTerm",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "POBName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CurrencyCode",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Counter",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Counter1",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "Staging_Commissions"
+				}
+			},
+			"dependsOn": []
+		}
+	]
+}
